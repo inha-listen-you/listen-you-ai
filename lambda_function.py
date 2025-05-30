@@ -82,6 +82,7 @@ def lambda_handler(event, context):
 
     state = {
         'query': event["query"],
+        'context': ['당신은 전문 상담가 입니다. 사용자의 대답에 맞게 새로운 질문들을 만들어 내세요. 상대방이 위로를 받을 수 있어야 합니다.']
     }
 
     response = graph.invoke(state)
