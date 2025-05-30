@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "langchain>=0.3.25",
     "langchain-aws>=0.2.24",
+    "langchain-community>=0.3.24",
     "langchain-core>=0.3.62",
     "langchain-tavily>=0.2.0",
     "langgraph>=0.4.7",
