@@ -3,7 +3,7 @@ import os
 import boto3
 import asyncio
 
-from langchain.llms import Bedrock
+from langchain_aws import ChatBedrock
 from typing import TypedDict, Annotated, List, Union
 from langgraph.graph.message import add_messages
 from langgraph.graph.message import AnyMessage
@@ -24,16 +24,13 @@ class AgentState(TypedDict):
 
 
 def get_llm():
+    model_id_from_user = "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
 
-
-    # ChatBedrock 인스턴스 생성
-    # credentials_profile_name 와 region_name 은 환경에 맞게 설정
-    llm = Bedrock(
-        # credentials_profile_name="your-aws-profile", # AWS 프로파일 이름 (필요시)
-        region_name="us-east-1",  # 모델이 있는 리전 (예: us-east-1)
-        model_id="anthropic.claude-3-sonnet-20240229-v1:0",  # 또는 "anthropic.claude-3-sonnet-20240229-v1:0"
-        model_kwargs={  # Claude 3에 맞는 추가 파라미터 (Messages API 형식)
-            "anthropic_version": "bedrock-2023-05-31",  # Messages API 사용 명시
+    llm = ChatBedrock(
+        region_name="us-east-1",
+        model_id=model_id_from_user,
+        model_kwargs={
+            "anthropic_version": "bedrock-2023-05-31",
             "temperature": 0.7,
             "max_tokens": 1000
         }
