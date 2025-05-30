@@ -24,9 +24,21 @@ class AgentState(TypedDict):
 
 
 def get_llm():
-    bedrock_runtime = boto3.client(service_name='bedrock-runtime', region_name='us-east-1')
 
-    return Bedrock(client=bedrock_runtime, model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0", model_kwargs={"max_tokens": 512}, )
+
+    # ChatBedrock 인스턴스 생성
+    # credentials_profile_name 와 region_name 은 환경에 맞게 설정
+    llm = Bedrock(
+        # credentials_profile_name="your-aws-profile", # AWS 프로파일 이름 (필요시)
+        region_name="us-east-1",  # 모델이 있는 리전 (예: us-east-1)
+        model_id="anthropic.claude-3-sonnet-20240229-v1:0",  # 또는 "anthropic.claude-3-sonnet-20240229-v1:0"
+        model_kwargs={  # Claude 3에 맞는 추가 파라미터 (Messages API 형식)
+            "anthropic_version": "bedrock-2023-05-31",  # Messages API 사용 명시
+            "temperature": 0.7,
+            "max_tokens": 1000
+        }
+    )
+    return llm
 
 # def get_retriever():
 #     embedding_function = UpstageEmbeddings(model="soloar-embedding-1-large",

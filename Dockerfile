@@ -1,11 +1,13 @@
 FROM public.ecr.aws/lambda/python:3.13
 
+# UV 설치
 RUN pip install --no-cache-dir uv
 
-COPY pyproject.toml uv.lock* ./
-# uv.lock 파일이 있다면 --locked 옵션으로 정확한 버전 설치
-RUN uv sync --no-cache-dir --locked
+# requirements.txt 복사 및 의존성 설치
+COPY requirements.txt .
+RUN uv pip install -r requirements.txt --target ${LAMBDA_TASK_ROOT}
 
-COPY lambda_function.py .
+# 애플리케이션 코드 복사
+COPY lambda_function.py ${LAMBDA_TASK_ROOT}/
 
-CMD [ "lambda_function.lambda_handler" ]
+CMD ["lambda_function.lambda_handler"]
