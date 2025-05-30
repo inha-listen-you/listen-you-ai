@@ -3,7 +3,7 @@ import os
 import boto3
 import asyncio
 
-from langchain_aws import ChatBedrock
+from langchain.llms import Bedrock
 from typing import TypedDict, Annotated, List, Union
 from langgraph.graph.message import add_messages
 from langgraph.graph.message import AnyMessage
@@ -24,30 +24,9 @@ class AgentState(TypedDict):
 
 
 def get_llm():
+    bedrock_runtime = boto3.client(service_name='bedrock-runtime', region_name='us-east-1')
 
-    # 사용자가 제공한 모델 ID (정확한지 확인 필요)
-    # 이 ID가 실제로 존재하는지, 그리고 사용자의 AWS 계정/리전에서 접근 가능한지 확인해야 합니다.
-    model_id_from_user = "us.anthropic.claude-3-7-sonnet-20250219-v1:0"
-
-    # LangChain은 모델 ID에서 리전 정보를 직접 사용하지 않으므로,
-    # 만약 'us.'가 리전을 의미한다면, Bedrock 클라이언트 생성 시 해당 리전을 지정해야 합니다.
-    # 여기서는 우선 ID 자체의 유효성에 초점을 맞춥니다.
-    # 가장 가능성이 높은 정확한 ID는 'anthropic.claude-3-sonnet-20240229-v1:0' 입니다.
-    # 제공된 ID가 작동하지 않으면 공식 ID로 변경해 보세요.
-
-    # ChatBedrock 인스턴스 생성
-    # credentials_profile_name 와 region_name 은 환경에 맞게 설정
-    llm = ChatBedrock(
-        # credentials_profile_name="your-aws-profile", # AWS 프로파일 이름 (필요시)
-        region_name="us-east-1",  # 모델이 있는 리전 (예: us-east-1)
-        model_id=model_id_from_user,  # 또는 "anthropic.claude-3-sonnet-20240229-v1:0"
-        model_kwargs={  # Claude 3에 맞는 추가 파라미터 (Messages API 형식)
-            "anthropic_version": "bedrock-2023-05-31",  # Messages API 사용 명시
-            "temperature": 0.7,
-            "max_tokens": 1000
-        }
-    )
-    return llm
+    return Bedrock(client=bedrock_runtime, model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0", model_kwargs={"max_tokens": 512}, )
 
 # def get_retriever():
 #     embedding_function = UpstageEmbeddings(model="soloar-embedding-1-large",
@@ -107,3 +86,9 @@ def lambda_handler(event, context):
     return {
         'message': response['answer']
     }
+
+if __name__ == "__main__":
+    event = {'query': 'what is the meaning of life?', 'survey_name': 'What is the meaning of life?',
+             'survey_name': 'What is the meaning of life?'
+             }
+    lambda_handler(event, None)
