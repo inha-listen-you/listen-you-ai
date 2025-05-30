@@ -16,11 +16,9 @@ from langgraph.graph import START, END
 
 class AgentState(TypedDict):
     messages: Annotated[List[AnyMessage], add_messages]
-    user_id: str
     query: str
     context: list
     answer: str
-    survey_name: str
 
 
 def get_llm():
@@ -70,15 +68,11 @@ def decide_survey(state: AgentState):
     return {'context': response}
 
 
-
-
 def get_graph():
     graph_builder = StateGraph(AgentState)
-    graph_builder.add_node('decide_survey', decide_survey)
     graph_builder.add_node('generate', generate)
 
-    graph_builder.add_edge(START, 'decide_survey')
-    graph_builder.add_edge('decide_survey', 'generate')
+    graph_builder.add_edge(START, 'generate')
     graph_builder.add_edge('generate', END)
     return graph_builder.compile()
 
@@ -88,7 +82,6 @@ def lambda_handler(event, context):
 
     state = {
         'query': event["query"],
-        'survey_name': event["survey_name"]
     }
 
     response = graph.invoke(state)
