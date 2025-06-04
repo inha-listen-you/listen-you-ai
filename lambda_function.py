@@ -30,6 +30,7 @@ from langgraph_checkpoint_dynamodb import DynamoDBTableConfig, DynamoDBConfig, D
 RAG_PROMPT_TEMPLATE = """
 당신은 사용자의 질문에 친절하고 상세하게 답변하는 AI 상담가입니다.
 주어진 이전 대화 내용과 참고 정보를 바탕으로 사용자의 현재 질문에 답변해주세요.
+사용자에게 정신상담과 관련된 질문까지 생성해주면 좋습니다.
 
 [이전 대화 내용]
 {messages}
@@ -52,12 +53,15 @@ class AgentState(TypedDict):
     # answer: str
 
 
-dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
+# dynamodb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
+dynamodb = boto3.resource('dynamodb')
 
-TABLE_NAME = 'listen-you-full'
+# TABLE_NAME = 'listen-you-full'
+TABLE_NAME = os.environ['DYNAMODB_TABLE_NAME']
 table = dynamodb.Table(TABLE_NAME)
 
-CHECKPOINT_TABLE_NAME = 'listen-you-checkpoints'
+# CHECKPOINT_TABLE_NAME = 'listen-you-checkpoints'
+CHECKPOINT_TABLE_NAME = os.environ['DYNAMODB_CHECKPOINT_TABLE_NAME']
 
 checkpoint_table_config = DynamoDBTableConfig(table_name=CHECKPOINT_TABLE_NAME)
 checkpointer_config = DynamoDBConfig(table_config=checkpoint_table_config, endpoint_url='http://localhost:8000')
@@ -81,18 +85,6 @@ def get_llm():
         }
     )
     return llm
-
-# def get_retriever():
-#     embedding_function = UpstageEmbeddings(model="soloar-embedding-1-large",
-#                                            api_key="up_oHwczQeYRxhIPy2wtDxc40qGSaA8p"
-#                                            )
-#
-#     vector_store = Chroma(embedding_function=embedding_function,
-#                           collection_name="mental_health_collection",
-#                           persist_directory='./mental_health_collection'
-#                           )
-#
-#     return vector_store.as_retriever(search_kwargs={"k": 3})
 
 def generate(state: AgentState):
     query = state['query']
@@ -150,39 +142,6 @@ def get_counsel_data(counsel_id):
             print(f"user_id: {item['user_id']}, timestamp: {item['timestamp']}, ai_answer: {item['ai_answer']}")
 
 
-def get_last_checkpoint_for_counsel(counsel_id_thread):
-    """특정 상담 ID(thread_id)의 마지막 저장된 체크포인트(AgentState)를 가져옵니다."""
-    try:
-        config = {"configurable": {"thread_id": counsel_id_thread}}
-        state_tuple = checkpointer.get_tuple(config)  # get_tuple()은 (checkpoint, metadata, parent_config) 반환
-        if state_tuple:
-            checkpoint_data = state_tuple.checkpoint  # 체크포인트 데이터 (AgentState)
-            # metadata = state_tuple.metadata
-            # parent_config = state_tuple.parent_config
-
-            print(f"\n--- Last checkpoint for thread_id {counsel_id_thread} from '{CHECKPOINT_TABLE_NAME}' ---")
-            # AgentState의 messages는 AnyMessage 객체 리스트이므로, content만 출력하거나 필요에 따라 직렬화
-            if checkpoint_data and 'messages' in checkpoint_data:
-                print("  Messages in checkpoint:")
-                for msg in checkpoint_data['messages']:
-                    # AnyMessage 객체는 content, type 등의 속성을 가짐
-                    print(f"    {msg.type.upper()}: {msg.content}")
-            else:
-                print("  No messages found in checkpoint or checkpoint is empty.")
-
-            # 다른 상태 정보도 출력 가능
-            if checkpoint_data:
-                print(f"  Query: {checkpoint_data.get('query')}")
-                print(f"  Answer: {checkpoint_data.get('answer')}")
-
-            return checkpoint_data
-        else:
-            print(f"No checkpoint found for thread_id: {counsel_id_thread} in '{CHECKPOINT_TABLE_NAME}'")
-            return None
-    except Exception as e:
-        print(f"체크포인트 조회 중 오류 발생: {e}")
-        return None
-
 def lambda_handler(event, context):
     load_dotenv()
 
@@ -210,10 +169,9 @@ def lambda_handler(event, context):
     }
 
 if __name__ == "__main__":
-    event = {'query': '배고파 밥 메뉴 추천좀','user_id': 1, 'counsel_id': "123"}
-    handler = lambda_handler(event, None)
 
-    print(handler["message"])
-
-
-    get_last_checkpoint_for_counsel("123")
+    # 첫 번째 대화 (counsel_id="123")
+    event1 = {'query': '배고파 밥 메뉴 추천좀','user_id': 1, 'counsel_id': "123"}
+    print(f"\n--- 첫 번째 대화 시작 (counsel_id: {event1['counsel_id']}) ---")
+    handler_response1 = lambda_handler(event1, None)
+    print(f"AI 응답: {handler_response1['message']}")
