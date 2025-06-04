@@ -26,6 +26,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langgraph.graph import START, END
 
 from langgraph_checkpoint_dynamodb import DynamoDBTableConfig, DynamoDBConfig, DynamoDBSaver
+from langgraph_checkpoint_dynamodb.errors import DynamoDBCheckpointError
 
 RAG_PROMPT_TEMPLATE = """
 당신은 사용자의 질문에 친절하고 상세하게 답변하는 AI 상담가입니다.
@@ -162,12 +163,31 @@ def lambda_handler(event, context):
 
     config = {"configurable": {"thread_id": event["counsel_id"]}}
 
-    response = graph.invoke(state, config=config)
+    try:
+        response = graph.invoke(state, config=config)
 
-    insert_counsel_data(event["user_id"], event["counsel_id"], response["messages"][-1].content, event["query"])
-    return {
-        'message': response['messages'][-1].content
-    }
+        insert_counsel_data(event["user_id"], event["counsel_id"], response["messages"][-1].content, event["query"])
+        return {
+            'message': response['messages'][-1].content
+        }
+
+    except DynamoDBCheckpointError as exc:  # langgraph_checkpoint_dynamodb.errors.DynamoDBCheckpointError 임포트 필요
+        print(f"DynamoDBCheckpointError 발생: {exc}")
+        if exc.__cause__:  # 원래 ClientError가 있는지 확인
+            original_error = exc.__cause__
+            print(f"원인 예외 타입: {type(original_error)}")
+            print(f"원인 예외 메시지: {original_error}")
+            if hasattr(original_error, 'response'):
+                print(f"원인 예외 응답: {original_error.response}")
+        raise  # 원래 흐름대로 예외를 다시 발생시키거나 적절히 처리
+
+    except Exception as exc:
+        print(f"처리되지 않은 예외 발생: {exc}")
+        # 상세 스택 트레이스 로깅
+        import traceback
+
+        print(traceback.format_exc())
+        raise
 
 if __name__ == "__main__":
 
