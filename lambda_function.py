@@ -64,7 +64,8 @@ table = dynamodb.Table(TABLE_NAME)
 CHECKPOINT_TABLE_NAME = os.environ['DYNAMODB_CHECKPOINT_TABLE_NAME']
 
 checkpoint_table_config = DynamoDBTableConfig(table_name=CHECKPOINT_TABLE_NAME)
-checkpointer_config = DynamoDBConfig(table_config=checkpoint_table_config, endpoint_url='http://localhost:8000')
+# checkpointer_config = DynamoDBConfig(table_config=checkpoint_table_config, endpoint_url='http://localhost:8000')
+checkpointer_config = DynamoDBConfig(table_config=checkpoint_table_config)
 checkpointer = DynamoDBSaver(config=checkpointer_config, deploy=False)
 
 
@@ -92,7 +93,7 @@ def generate(state: AgentState):
     context = state['context']
 
     chain = (rag_prompt
-        | get_llm_local()
+        | get_llm()
         | StrOutputParser())
 
     response = chain.invoke({'query': query, 'messages': messages, 'context': context, })
